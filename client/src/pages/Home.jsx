@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Container, Typography, Box, Grid, Button, Paper, Card, CardContent } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import SecurityIcon from '@mui/icons-material/Security';
 import PeopleIcon from '@mui/icons-material/People';
 import SpeedIcon from '@mui/icons-material/Speed';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 import axios from 'axios';
 import L from 'leaflet';
 import CardPreview from '../components/CardPreview';
@@ -18,7 +19,7 @@ delete L.Icon.Default.prototype._getIconUrl;
 // Update the icons for the map
 const requestIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -27,7 +28,7 @@ const requestIcon = new L.Icon({
 
 const donationIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -126,44 +127,84 @@ const StyledMapContainer = styled(Paper)(({ theme }) => ({
   border: '1px solid rgba(25, 118, 210, 0.2)',
 }));
 
+// קומפוננטת הבקרה למיקום - מרכז עליון
+function LocateControl() {
+  const map = useMap();
+  
+  const handleLocate = () => {
+    map.locate({
+      setView: true,
+      maxZoom: 16
+    });
+  };
+  
+  return (
+    <Box 
+      sx={{ 
+        position: 'absolute', 
+        top: '10px',  // חלק עליון
+        left: '50%',  // מרכז אופקי
+        transform: 'translateX(-50%)', // מרכוז אופקי
+        zIndex: 1000,
+        direction: 'ltr'
+      }}
+    >
+      <Button
+        onClick={handleLocate}
+        variant="contained"
+        size="small"
+        sx={{
+          width: '40px',
+          height: '40px',
+          minWidth: '40px',
+          borderRadius: '50%',
+          padding: 0,
+          boxShadow: 2
+        }}
+      >
+        <MyLocationIcon />
+      </Button>
+    </Box>
+  );
+}
+
 const Home = () => {
-  const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [latestCards, setLatestCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
-  const [userLocation, setUserLocation] = useState([31.5, 34.75]); // Default to Israel center
+  const [userLocation, setUserLocation] = useState([31.7683, 35.2137]); // ברירת מחדל: ירושלים
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get user location with higher accuracy options
+    // השג את מיקום המשתמש
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
         },
-        (error) => {
-          console.error("Error getting location:", error);
-        },
-        { 
-          enableHighAccuracy: true, // Request high accuracy
-          timeout: 10000,           // Wait longer for better results
-          maximumAge: 0             // Always get fresh position
+        () => {
+          console.log('לא ניתן לקבל את מיקום המשתמש');
         }
       );
     }
 
-    // Fetch cards
-    const fetchCards = async () => {
+    // השג את הכרטיסים האחרונים
+    const fetchLatestCards = async () => {
       try {
-        const response = await axios.get('/api/cards');
-        setCards(response.data);
+        const response = await axios.get('/api/cards?limit=6');
+        setLatestCards(response.data);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching cards:', error);
+        console.error('Error fetching latest cards:', error);
         setLoading(false);
       }
     };
 
-    fetchCards();
+    fetchLatestCards();
   }, []);
+
+  const openCardPreview = (card) => {
+    setSelectedCard(card);
+  };
 
   return (
     <Box>
@@ -241,8 +282,8 @@ const Home = () => {
         <StyledMapContainer elevation={3}>
           <MapContainer
             center={userLocation}
-            zoom={16}
-            style={{ height: '600px', width: '100%' }}
+            zoom={10}
+            style={{ height: '400px', width: '100%' }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -257,40 +298,49 @@ const Home = () => {
             </Marker>
             
             {/* Card markers */}
-            {!loading && cards.map(card => (
-              <Marker
-                key={card._id}
-                position={[card.location.coordinates[1], card.location.coordinates[0]]}
-                icon={card.cardType === 'request' ? requestIcon : donationIcon}
-              >
-                <Popup>
-                  <Box sx={{ minWidth: 200, maxWidth: 250 }}>
-                    <Typography variant="subtitle1" fontWeight="bold">{card.itemName}</Typography>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                      {card.description.length > 100 
-                        ? card.description.substring(0, 100) + '...' 
-                        : card.description}
-                    </Typography>
-                    <Button 
-                      variant="outlined" 
-                      size="small" 
-                      fullWidth
-                      onClick={() => setSelectedCard(card)}
-                      sx={{ 
-                        borderColor: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
-                        color: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
-                        '&:hover': {
-                          borderColor: card.cardType === 'request' ? '#ff5252' : '#1565c0',
-                          bgcolor: card.cardType === 'request' ? 'rgba(255, 107, 107, 0.1)' : 'rgba(25, 118, 210, 0.1)'
-                        }
-                      }}
-                    >
-                      הצג פרטים נוספים
-                    </Button>
-                  </Box>
-                </Popup>
-              </Marker>
+            {!loading && latestCards.map(card => (
+              card.location && card.location.coordinates && card.location.coordinates.length === 2 && 
+              card.location.coordinates[0] !== 0 && card.location.coordinates[1] !== 0 && (
+                <Marker
+                  key={card._id}
+                  position={[card.location.coordinates[1], card.location.coordinates[0]]}
+                  icon={card.cardType === 'request' ? requestIcon : donationIcon}
+                  eventHandlers={{
+                    click: () => {
+                      openCardPreview(card);
+                    },
+                  }}
+                >
+                  <Popup>
+                    <Box sx={{ minWidth: 200, maxWidth: 250 }}>
+                      <Typography variant="subtitle1" fontWeight="bold">{card.itemName}</Typography>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        {card.description.length > 100 
+                          ? card.description.substring(0, 100) + '...' 
+                          : card.description}
+                      </Typography>
+                      <Button 
+                        variant="outlined" 
+                        size="small" 
+                        fullWidth
+                        onClick={() => openCardPreview(card)}
+                        sx={{ 
+                          borderColor: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
+                          color: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
+                          '&:hover': {
+                            borderColor: card.cardType === 'request' ? '#ff5252' : '#1565c0',
+                            bgcolor: card.cardType === 'request' ? 'rgba(255, 107, 107, 0.1)' : 'rgba(25, 118, 210, 0.1)'
+                          }
+                        }}
+                      >
+                        הצג פרטים נוספים
+                      </Button>
+                    </Box>
+                  </Popup>
+                </Marker>
+              )
             ))}
+            <LocateControl />
           </MapContainer>
         </StyledMapContainer>
         
