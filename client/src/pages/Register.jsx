@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { 
   TextField, 
@@ -9,11 +9,14 @@ import {
   Paper, 
   Alert, 
   Link,
-  CircularProgress
+  CircularProgress,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { PersonAdd as RegisterIcon } from '@mui/icons-material';
+import { PersonAdd as RegisterIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import axios from 'axios';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -37,49 +40,140 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { register, user } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
 
-  // Redirect if already logged in
-  React.useEffect(() => {
+  // If you want to show a message instead of redirecting
+  useEffect(() => {
     if (user) {
-      navigate('/');
+      console.log("User is already registered and logged in");
+      // Option 1: You can comment this out to allow visiting the register page while logged in
+      // navigate('/');
     }
   }, [user, navigate]);
 
   const { username, email, password, confirmPassword } = formData;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // Update form data
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+    
+    // Validate fields as user types
+    let newErrors = { ...formErrors };
+    
+    switch (name) {
+      case 'username':
+        newErrors.username = value.length < 3 ? 'שם המשתמש חייב להכיל לפחות 3 תווים' : '';
+        break;
+      case 'email':
+        newErrors.email = !validateEmail(value) ? 'אנא הכנס כתובת אימייל תקינה' : '';
+        break;
+      case 'password':
+        newErrors.password = !validatePasswordStrength(value) 
+          ? 'הסיסמה חייבת להכיל לפחות 8 תווים, מספר אחד ואות אחת' 
+          : '';
+        // Also check confirm password match if it exists
+        if (formData.confirmPassword) {
+          newErrors.confirmPassword = value !== formData.confirmPassword 
+            ? 'הסיסמאות אינן תואמות' 
+            : '';
+        }
+        break;
+      case 'confirmPassword':
+        newErrors.confirmPassword = value !== formData.password 
+          ? 'הסיסמאות אינן תואמות' 
+          : '';
+        break;
+      default:
+        break;
+    }
+    
+    setFormErrors(newErrors);
+  };
+
+  const validateEmail = (email) => {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(email);
+  };
+
+  const validatePasswordStrength = (password) => {
+    // Password must be at least 8 characters and contain at least one number and one letter
+    const re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    return re.test(password);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     
-    // Check if passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError('הסיסמאות אינן תואמות');
+    // Comprehensive form validation
+    let hasError = false;
+    let newErrors = { ...formErrors };
+    
+    if (!formData.username) {
+      newErrors.username = 'שם משתמש הוא שדה חובה';
+      hasError = true;
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'שם המשתמש חייב להכיל לפחות 3 תווים';
+      hasError = true;
+    }
+    
+    if (!formData.email) {
+      newErrors.email = 'אימייל הוא שדה חובה';
+      hasError = true;
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'אנא הכנס כתובת אימייל תקינה';
+      hasError = true;
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'סיסמה היא שדה חובה';
+      hasError = true;
+    } else if (!validatePasswordStrength(formData.password)) {
+      newErrors.password = 'הסיסמה חייבת להכיל לפחות 8 תווים, מספר אחד ואות אחת';
+      hasError = true;
+    }
+    
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'אימות סיסמה הוא שדה חובה';
+      hasError = true;
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'הסיסמאות אינן תואמות';
+      hasError = true;
+    }
+    
+    setFormErrors(newErrors);
+    
+    if (hasError) {
       return;
     }
     
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      console.log('Registering with:', { 
-        username: formData.username, 
-        email: formData.email
-      });
-      
-      // Remove confirmPassword as it's not needed in the API call
-      const { confirmPassword, ...userData } = formData;
-      
-      const result = await register(userData);
-      if (result.success) {
-        navigate('/');
+      const response = await axios.post('/api/auth/register', formData);
+      localStorage.setItem('token', response.data.token);
+      navigate('/');
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else if (err.response && err.response.status === 400) {
+        setError('שם משתמש או אימייל כבר קיימים במערכת');
       } else {
-        setError(result.message);
-        console.log('Registration failed:', result.message);
+        setError('שגיאה בהרשמה. אנא נסה שוב מאוחר יותר');
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError('שגיאה ברישום, אנא נסה שנית');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -96,6 +190,8 @@ const Register = () => {
         
         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
           <TextField
+            error={!!formErrors.username}
+            helperText={formErrors.username}
             margin="normal"
             required
             fullWidth
@@ -110,6 +206,8 @@ const Register = () => {
             dir="rtl"
           />
           <TextField
+            error={!!formErrors.email}
+            helperText={formErrors.email}
             margin="normal"
             required
             fullWidth
@@ -123,32 +221,60 @@ const Register = () => {
             dir="rtl"
           />
           <TextField
-            margin="normal"
+            error={!!formErrors.password}
+            helperText={formErrors.password}
             required
             fullWidth
             name="password"
             label="סיסמה"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             id="password"
             autoComplete="new-password"
             value={password}
             onChange={handleChange}
             variant="outlined"
             dir="rtl"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
           <TextField
-            margin="normal"
+            error={!!formErrors.confirmPassword}
+            helperText={formErrors.confirmPassword}
             required
             fullWidth
             name="confirmPassword"
             label="אימות סיסמה"
-            type="password"
+            type={showConfirmPassword ? 'text' : 'password'}
             id="confirmPassword"
             autoComplete="new-password"
             value={confirmPassword}
             onChange={handleChange}
             variant="outlined"
             dir="rtl"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    edge="end"
+                  >
+                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
           <Button
             type="submit"

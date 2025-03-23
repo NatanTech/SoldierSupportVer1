@@ -12,54 +12,64 @@ import AdminDashboard from './pages/AdminDashboard';
 import ChatPage from './pages/ChatPage';
 import NotFound from './pages/NotFound';
 
-// Private route component
-const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) return <div>טוען...</div>;
-  
-  return user ? children : <Navigate to="/login" />;
-};
-
-// Admin route component
-const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) return <div>טוען...</div>;
-  
-  return user && user.role === 'admin' ? children : <Navigate to="/" />;
-};
-
 function App() {
+  const { user, loading } = useAuth();
+
+  // Custom route component for pages that should only be accessible when NOT logged in
+  const PublicOnlyRoute = ({ children }) => {
+    if (loading) return <div>Loading...</div>;
+    return !user ? children : <Navigate to="/" />;
+  };
+
+  // ProtectedRoute component - redirects to login if not authenticated
+  const ProtectedRoute = ({ children }) => {
+    if (loading) return <div>Loading...</div>;
+    return user ? children : <Navigate to="/login" />;
+  };
+
+  // AdminRoute component - redirects to home if not admin
+  const AdminRoute = ({ children }) => {
+    if (loading) return <div>Loading...</div>;
+    return user && user.role === 'admin' ? children : <Navigate to="/" />;
+  };
+
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
         {/* Public routes */}
         <Route index element={<Home />} />
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
-        <Route path="cards" element={<CardsPage />} />
-        <Route path="cards/:id" element={<CardDetails />} />
+        <Route path="/cards" element={<CardsPage />} />
+        <Route path="/cards/:id" element={<CardDetails />} />
         
-        {/* Protected routes */}
-        <Route path="create-card" element={
-          <PrivateRoute>
+        {/* Routes that are only accessible when NOT logged in */}
+        <Route path="/login" element={
+          // Removed the redirect for already logged in users
+          <Login />
+        } />
+        <Route path="/register" element={
+          // Removed the redirect for already logged in users
+          <Register />
+        } />
+
+        {/* Protected routes - require authentication */}
+        <Route path="/create-card" element={
+          <ProtectedRoute>
             <CreateCard />
-          </PrivateRoute>
+          </ProtectedRoute>
         } />
-        <Route path="chat/:id" element={
-          <PrivateRoute>
+        <Route path="/chat/:id" element={
+          <ProtectedRoute>
             <ChatPage />
-          </PrivateRoute>
+          </ProtectedRoute>
         } />
-        
+
         {/* Admin routes */}
-        <Route path="admin" element={
+        <Route path="/admin" element={
           <AdminRoute>
             <AdminDashboard />
           </AdminRoute>
         } />
-        
+
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />
       </Route>

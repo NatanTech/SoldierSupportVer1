@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { 
   TextField, 
@@ -9,10 +9,12 @@ import {
   Paper, 
   Alert, 
   Link,
-  CircularProgress
+  CircularProgress,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Login as LoginIcon } from '@mui/icons-material';
+import { Login as LoginIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -33,17 +35,26 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login, user } = useAuth();
 
-  // Redirect if already logged in
-  React.useEffect(() => {
+  // If you want to show a message instead of redirecting
+  useEffect(() => {
     if (user) {
-      navigate('/');
+      console.log("User is already logged in");
+      // Option 1: You can comment this out to allow visiting the login page while logged in
+      // navigate('/');
     }
   }, [user, navigate]);
 
   const { email, password } = formData;
+
+  // Add email validation
+  const validateEmail = (email) => {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(email);
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,30 +64,34 @@ const Login = () => {
     e.preventDefault();
     setError('');
     
-    if (!email || !password) {
+    // Form validation
+    if (!formData.email || !formData.password) {
       setError('אנא מלא את כל השדות');
       return;
     }
     
+    if (!validateEmail(formData.email)) {
+      setError('אנא הכנס כתובת אימייל תקינה');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      setError('הסיסמה צריכה להכיל לפחות 6 תווים');
+      return;
+    }
+    
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      
-      // Debug output to verify data
-      console.log('Login attempt with:', {
-        email: email,
-        password: password ? '********' : 'missing'
-      });
-      
-      const result = await login(email, password);
-      
+      const result = await login(formData.email, formData.password);
       if (result.success) {
         navigate('/');
       } else {
         setError(result.message);
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('שגיאה בהתחברות, אנא נסה שנית');
+    } catch (err) {
+      setError('שגיאת התחברות. אנא נסה שוב מאוחר יותר');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -112,13 +127,25 @@ const Login = () => {
             fullWidth
             name="password"
             label="סיסמה"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             id="password"
             autoComplete="current-password"
             value={password}
             onChange={handleChange}
             variant="outlined"
             dir="rtl"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
           />
           <Button
             type="submit"

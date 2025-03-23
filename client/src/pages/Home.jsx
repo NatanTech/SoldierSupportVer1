@@ -1,100 +1,103 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Button, 
-  Grid, 
-  Paper, 
-  Card, 
-  CardContent,
-  useMediaQuery 
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import { useTheme } from '@mui/material/styles';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { Container, Typography, Box, Grid, Button, Paper, Card, CardContent } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import { styled } from '@mui/material/styles';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import SecurityIcon from '@mui/icons-material/Security';
+import PeopleIcon from '@mui/icons-material/People';
+import SpeedIcon from '@mui/icons-material/Speed';
 import axios from 'axios';
+import L from 'leaflet';
 import CardPreview from '../components/CardPreview';
-import { 
-  Security as SecurityIcon, 
-  PeopleAlt as PeopleIcon, 
-  Speed as SpeedIcon 
-} from '@mui/icons-material';
 
-// Create custom marker icons
+// Delete Icon.Default.prototype._getIconUrl reference
 delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
 
+// Update the icons for the map
 const requestIcon = new L.Icon({
-  iconUrl: '/markers/orange-marker.png',
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
-  popupAnchor: [1, -34]
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
 });
 
 const donationIcon = new L.Icon({
-  iconUrl: '/markers/blue-marker.png',
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
-  popupAnchor: [1, -34]
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Custom location icon using emoji-like appearance
+const locationIcon = new L.DivIcon({
+  html: '📍',
+  className: 'location-emoji-icon',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30]
 });
 
 // Styled components
-const HeroSection = styled(Box)(({ theme }) => ({
-  minHeight: '60vh',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: 'white',
+const SectionTitle = styled(Typography)(({ theme }) => ({
   textAlign: 'center',
-  position: 'relative',
-  padding: theme.spacing(8, 2),
-  backgroundColor: theme.palette.primary.main,
-  borderRadius: theme.spacing(2),
-  marginBottom: theme.spacing(6),
+  marginBottom: theme.spacing(4),
+  fontWeight: 'bold',
+  variant: 'h4',
+  component: 'h2'
 }));
 
-const StyledCard = styled(Card)(({ theme }) => ({
-  height: '100%',
-  transition: 'transform 0.3s, box-shadow 0.3s',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-    boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
+// Hero section styling with more attractive background
+const HeroSection = styled(Box)(({ theme }) => ({
+  backgroundImage: 'url(/images/hero-background.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  color: 'white',
+  padding: theme.spacing(8, 2),
+  textAlign: 'center',
+  position: 'relative',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    // Modern gradient overlay instead of flat gray
+    background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.85) 0%, rgba(17, 82, 147, 0.9) 100%)',
+    zIndex: 1,
   },
 }));
 
-const SectionTitle = styled(Typography)(({ theme }) => ({
+const HeroContent = styled(Box)(({ theme }) => ({
   position: 'relative',
-  marginBottom: theme.spacing(6),
-  textAlign: 'center',
-  '&:after': {
-    content: '""',
-    position: 'absolute',
-    width: '80px',
-    height: '4px',
-    background: theme.palette.primary.main,
-    bottom: '-15px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    borderRadius: '2px',
-  }
+  zIndex: 2,
 }));
 
+// Style for the info cards
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'transform 0.3s, box-shadow 0.3s',
+  '&:hover': {
+    transform: 'translateY(-10px)',
+    boxShadow: theme.shadows[10],
+  },
+}));
+
+// InfoCard component definition
 const InfoCard = ({ icon, title, description }) => (
   <StyledCard elevation={2}>
     <CardContent sx={{ p: 4, textAlign: 'center' }}>
       <Box sx={{ mb: 2, color: 'primary.main' }}>
         {icon}
       </Box>
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" component="h3" gutterBottom>
         {title}
       </Typography>
       <Typography variant="body2" color="text.secondary">
@@ -104,137 +107,140 @@ const InfoCard = ({ icon, title, description }) => (
   </StyledCard>
 );
 
+// Add this CSS for the emoji icon
+const emojiIconStyle = `
+  .location-emoji-icon {
+    font-size: 30px;
+    text-align: center;
+    line-height: 0;
+  }
+`;
+
+// Add a styled component for the map container
+const StyledMapContainer = styled(Paper)(({ theme }) => ({
+  borderRadius: '15px',
+  overflow: 'hidden',
+  marginBottom: theme.spacing(6),
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+  border: '1px solid rgba(25, 118, 210, 0.2)',
+}));
+
 const Home = () => {
-  const [userLocation, setUserLocation] = useState([31.77, 35.21]); // Default to Israel center
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCard, setSelectedCard] = useState(null);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+  const [userLocation, setUserLocation] = useState([31.5, 34.75]); // Default to Israel center
+
   useEffect(() => {
-    // Get user's location
+    // Get user location with higher accuracy options
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        position => {
+        (position) => {
           setUserLocation([position.coords.latitude, position.coords.longitude]);
         },
-        error => {
+        (error) => {
           console.error("Error getting location:", error);
+        },
+        { 
+          enableHighAccuracy: true, // Request high accuracy
+          timeout: 10000,           // Wait longer for better results
+          maximumAge: 0             // Always get fresh position
         }
       );
     }
-    
+
     // Fetch cards
     const fetchCards = async () => {
       try {
-        const res = await axios.get('/api/cards');
-        setCards(res.data);
+        const response = await axios.get('/api/cards');
+        setCards(response.data);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching cards:', error);
-      } finally {
         setLoading(false);
       }
     };
-    
+
     fetchCards();
   }, []);
-  
+
   return (
     <Box>
+      <style>{emojiIconStyle}</style>
+      
+      {/* Smaller hero section */}
       <HeroSection>
-        <Container maxWidth="md">
-          <Typography variant="h2" component="h1" sx={{ fontWeight: 'bold', mb: 3 }}>
-            תמיכה בחיילים
-          </Typography>
-          <Typography variant="h5" sx={{ mb: 5, fontWeight: 'normal' }}>
-            פלטפורמה המחברת בין חיילים שצריכים ציוד לבין אזרחים שרוצים לתרום
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-            <Button 
-              component={RouterLink} 
-              to="/create-card" 
-              variant="contained" 
-              color="primary" 
-              size="large"
-              sx={{ 
-                px: 4, 
-                py: 1.5, 
-                borderRadius: '50px', 
-                fontSize: '1.1rem', 
-                fontWeight: 'bold',
-                boxShadow: '0 8px 16px rgba(25, 118, 210, 0.3)'
-              }}
-            >
-              צור כרטיס
-            </Button>
-            <Button 
-              component={RouterLink} 
-              to="/cards" 
-              variant="outlined" 
-              color="inherit" 
-              size="large"
-              sx={{ 
-                px: 4, 
-                py: 1.5, 
-                borderRadius: '50px', 
-                fontSize: '1.1rem',
-                borderColor: 'white',
-                color: 'white',
-                '&:hover': {
+        <HeroContent>
+          <Container maxWidth="md">
+            <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+              תמיכה בחיילים
+            </Typography>
+            <Typography variant="h6" sx={{ mb: 3, opacity: 0.9, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
+              חיבור בין חיילים ואזרחים לתמיכה הדדית
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+              <Button 
+                component={RouterLink} 
+                to="/create-card" 
+                variant="contained" 
+                size="large"
+                sx={{ 
+                  px: 3, 
+                  py: 1, 
+                  borderRadius: '50px', 
+                  fontSize: '1rem', 
+                  fontWeight: 'bold',
+                  bgcolor: '#ff6b6b',
+                  '&:hover': {
+                    bgcolor: '#ff5252',
+                  },
+                  boxShadow: '0 8px 16px rgba(255, 107, 107, 0.4)'
+                }}
+              >
+                צור כרטיס
+              </Button>
+              <Button 
+                component={RouterLink} 
+                to="/cards" 
+                variant="outlined" 
+                color="inherit" 
+                size="large"
+                sx={{ 
+                  px: 3, 
+                  py: 1, 
+                  borderRadius: '50px', 
+                  fontSize: '1rem',
                   borderColor: 'white',
-                  bgcolor: 'rgba(255, 255, 255, 0.1)'
-                }
-              }}
-            >
-              צפה בכל הכרטיסים
-            </Button>
-          </Box>
-        </Container>
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'white',
+                    bgcolor: 'rgba(255, 255, 255, 0.2)'
+                  }
+                }}
+              >
+                צפה בכל הכרטיסים
+              </Button>
+            </Box>
+          </Container>
+        </HeroContent>
       </HeroSection>
 
       <Container maxWidth="lg" sx={{ py: 8 }}>
-        <SectionTitle variant="h4" component="h2">
-          למה SoldierSupport?
-        </SectionTitle>
-        
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={4}>
-            <InfoCard 
-              icon={<SecurityIcon sx={{ fontSize: 60 }} />}
-              title="מאובטח"
-              description="המערכת מאובטחת ושומרת על פרטיות המשתמשים. מידע אישי נחשף רק כאשר אתם בוחרים לשתף אותו."
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <InfoCard 
-              icon={<PeopleIcon sx={{ fontSize: 60 }} />}
-              title="חיבור ישיר"
-              description="אנחנו מאפשרים חיבור ישיר בין חיילים לאזרחים, ללא מתווכים ובצורה מהירה ויעילה."
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <InfoCard 
-              icon={<SpeedIcon sx={{ fontSize: 60 }} />}
-              title="מהיר ויעיל"
-              description="המערכת מציגה בקשות ותרומות על גבי מפה, כך שקל למצוא התאמות במיקומים הקרובים אליכם."
-            />
-          </Grid>
-        </Grid>
-        
-        <Box sx={{ mt: 10, mb: 6 }}>
-          <SectionTitle variant="h4" component="h2">
-            מפת בקשות ותרומות
-          </SectionTitle>
-          <Typography variant="subtitle1" color="text.secondary" align="center" sx={{ mb: 4 }}>
-            סקור את המפה כדי לראות בקשות מחיילים (כתום) ותרומות מאזרחים (כחול)
-          </Typography>
-        </Box>
-        
-        <Paper elevation={3} sx={{ borderRadius: '15px', overflow: 'hidden', mb: 6 }}>
+        {/* Map section with enhanced styling */}
+        <SectionTitle>מפה</SectionTitle>
+        <Typography 
+          variant="subtitle1" 
+          color="text.secondary" 
+          align="center" 
+          sx={{ mb: 4 }}
+        >
+          <Box component="span" sx={{ color: '#ff6b6b', fontWeight: 'bold' }}>כתום</Box> - בקשות מחיילים | 
+          <Box component="span" sx={{ color: '#1976d2', fontWeight: 'bold', ml: 1 }}>כחול</Box> - תרומות מאזרחים
+        </Typography>
+        <StyledMapContainer elevation={3}>
           <MapContainer
             center={userLocation}
-            zoom={10}
+            zoom={16}
             style={{ height: '600px', width: '100%' }}
           >
             <TileLayer
@@ -242,9 +248,11 @@ const Home = () => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {/* User location */}
-            <Marker position={userLocation}>
-              <Popup>המיקום שלך</Popup>
+            {/* User's current location with the location emoji */}
+            <Marker position={userLocation} icon={locationIcon}>
+              <Popup>
+                <Typography variant="body1" fontWeight="bold">המיקום שלך</Typography>
+              </Popup>
             </Marker>
             
             {/* Card markers */}
@@ -267,6 +275,14 @@ const Home = () => {
                       size="small" 
                       fullWidth
                       onClick={() => setSelectedCard(card)}
+                      sx={{ 
+                        borderColor: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
+                        color: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
+                        '&:hover': {
+                          borderColor: card.cardType === 'request' ? '#ff5252' : '#1565c0',
+                          bgcolor: card.cardType === 'request' ? 'rgba(255, 107, 107, 0.1)' : 'rgba(25, 118, 210, 0.1)'
+                        }
+                      }}
                     >
                       הצג פרטים נוספים
                     </Button>
@@ -275,26 +291,33 @@ const Home = () => {
               </Marker>
             ))}
           </MapContainer>
-        </Paper>
+        </StyledMapContainer>
         
-        <Box sx={{ textAlign: 'center' }}>
-          <Button 
-            component={RouterLink} 
-            to="/create-card" 
-            variant="contained" 
-            color="primary" 
-            size="large"
-            sx={{ 
-              px: 4, 
-              py: 1.5, 
-              borderRadius: '50px', 
-              fontSize: '1.1rem', 
-              fontWeight: 'bold'
-            }}
-          >
-            צור כרטיס חדש
-          </Button>
-        </Box>
+        {/* About section with enhanced cards */}
+        <SectionTitle sx={{ mt: 6 }}>אודות</SectionTitle>
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          <Grid item xs={12} md={4}>
+            <InfoCard 
+              icon={<SecurityIcon fontSize="large" sx={{ color: '#4caf50' }} />}
+              title="אבטחה ופרטיות"
+              description="אנו שומרים על הפרטיות שלך בצורה הטובה ביותר, עם אבטחה מתקדמת להגנה על המידע האישי שלך."
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <InfoCard 
+              icon={<PeopleIcon fontSize="large" sx={{ color: '#ff9800' }} />}
+              title="קהילה תומכת"
+              description="הצטרף לקהילה גדולה של אנשים שאכפת להם ורוצים לעזור לחיילים שלנו בכל דרך אפשרית."
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <InfoCard 
+              icon={<SpeedIcon fontSize="large" sx={{ color: '#2196f3' }} />}
+              title="מהירות ויעילות"
+              description="מערכת פשוטה ומהירה שמחברת בין חיילים ותורמים במהירות וביעילות."
+            />
+          </Grid>
+        </Grid>
       </Container>
       
       {/* Card preview modal */}

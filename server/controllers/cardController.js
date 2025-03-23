@@ -71,20 +71,37 @@ exports.createCard = async (req, res) => {
 // @access  Public
 exports.getCards = async (req, res) => {
   try {
-    // Apply filters if provided
-    const filter = {};
-    if (req.query.cardType) {
-      filter.cardType = req.query.cardType;
+    const { cardType, category, searchQuery } = req.query;
+    
+    // Build the query
+    const query = {};
+    
+    if (cardType) {
+      query.cardType = cardType;
     }
-
-    const cards = await Card.find(filter)
-      .populate('user', 'username')
-      .sort({ createdAt: -1 });
-      
+    
+    if (category) {
+      query.category = category;
+    }
+    
+    if (searchQuery) {
+      query.$or = [
+        { itemName: { $regex: searchQuery, $options: 'i' } },
+        { description: { $regex: searchQuery, $options: 'i' } }
+      ];
+    }
+    
+    const cards = await Card.find(query)
+      .sort({ createdAt: -1 })
+      .populate('user', 'username');
+    
     res.json(cards);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'שגיאת שרת' });
+    console.error('Error fetching cards:', error);
+    res.status(500).json({ 
+      message: 'שגיאה בטעינת הכרטיסים',
+      error: error.message 
+    });
   }
 };
 
