@@ -10,9 +10,9 @@ async function createAdminUser() {
     
     // Admin details - change as needed
     const adminData = {
-      username: 'admin',
-      email: 'admin@example.com',
-      password: 'Admin123!',  // Will be hashed by the schema pre-save hook
+      username: 'natan',
+      email: 'tzuberinat@gmail.com',
+      password: '123456Natan',  // Will be hashed by the schema pre-save hook
       role: 'admin'
     };
     

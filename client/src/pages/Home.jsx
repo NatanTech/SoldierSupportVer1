@@ -10,6 +10,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import axios from 'axios';
 import L from 'leaflet';
 import CardPreview from '../components/CardPreview';
+import DotSimulation from '../components/DotSimulation';
 
 // Delete Icon.Default.prototype._getIconUrl reference
 delete L.Icon.Default.prototype._getIconUrl;
@@ -328,6 +329,8 @@ const Home = () => {
           onClose={() => setSelectedCard(null)} 
         />
       )}
+
+      <DotSimulation />
     </Box>
   );
 };
