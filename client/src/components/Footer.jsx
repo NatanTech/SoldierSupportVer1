@@ -1,99 +1,96 @@
 import React from 'react';
-import { Box, Container, Typography, Link, Grid, Divider, IconButton } from '@mui/material';
-import { Facebook, Twitter, Instagram, LinkedIn } from '@mui/icons-material';
+import { Box, Container, Grid, Typography, Link, Stack, IconButton } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import InstagramIcon from '@mui/icons-material/Instagram';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const Footer = () => {
+  const { language } = useLanguage();
+  const t = useTranslation(language);
+
   return (
-    <Box 
-      component="footer" 
-      sx={{ 
+    <Box
+      component="footer"
+      sx={{
+        backgroundColor: (theme) => theme.palette.primary.main,
+        color: 'white',
         py: 6,
-        px: 2, 
-        mt: 'auto', 
-        backgroundColor: 'primary.main',
-        color: 'white'
+        mt: 'auto',
       }}
     >
       <Container maxWidth="lg">
         <Grid container spacing={4}>
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} md={4}>
             <Typography variant="h6" gutterBottom>
-              SoldierSupport
+              {t('footerTitle')}
             </Typography>
-            <Typography variant="body2" sx={{ mb: 2, opacity: 0.8 }}>
-              החיבור בין חיילים לבין אזרחים - מחברים ביניכם עם מה שבאמת חשוב.
+            <Typography variant="body2" sx={{ maxWidth: '90%' }}>
+              {t('footerDescription')}
             </Typography>
-            <Box sx={{ mt: 2 }}>
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
               <IconButton color="inherit" aria-label="Facebook">
-                <Facebook />
+                <FacebookIcon />
               </IconButton>
               <IconButton color="inherit" aria-label="Twitter">
-                <Twitter />
+                <TwitterIcon />
               </IconButton>
               <IconButton color="inherit" aria-label="Instagram">
-                <Instagram />
+                <InstagramIcon />
               </IconButton>
               <IconButton color="inherit" aria-label="LinkedIn">
-                <LinkedIn />
+                <LinkedInIcon />
               </IconButton>
-            </Box>
+            </Stack>
           </Grid>
           
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} md={4}>
             <Typography variant="h6" gutterBottom>
-              קישורים מהירים
+              {t('quickLinks')}
             </Typography>
-            <Box component="ul" sx={{ p: 0, m: 0, listStyle: 'none' }}>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Link component={RouterLink} to="/" color="inherit" underline="hover">
-                  דף הבית
-                </Link>
-              </Box>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Link component={RouterLink} to="/cards" color="inherit" underline="hover">
-                  כל הכרטיסים
-                </Link>
-              </Box>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Link component={RouterLink} to="/create-card" color="inherit" underline="hover">
-                  יצירת כרטיס
-                </Link>
-              </Box>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Link href="#" color="inherit" underline="hover">
-                  מדיניות פרטיות
-                </Link>
-              </Box>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Link href="#" color="inherit" underline="hover">
-                  תנאי שימוש
-                </Link>
-              </Box>
-            </Box>
+            <Stack spacing={1}>
+              <Link component={RouterLink} to="/" color="inherit" underline="hover">
+                {t('home')}
+              </Link>
+              <Link component={RouterLink} to="/cards" color="inherit" underline="hover">
+                {t('cards')}
+              </Link>
+              <Link component={RouterLink} to="/about" color="inherit" underline="hover">
+                {t('aboutUs')}
+              </Link>
+              <Link component={RouterLink} to="/privacy" color="inherit" underline="hover">
+                {t('privacyPolicy')}
+              </Link>
+              <Link component={RouterLink} to="/terms" color="inherit" underline="hover">
+                {t('termsOfService')}
+              </Link>
+            </Stack>
           </Grid>
           
-          <Grid item xs={12} sm={4}>
+          <Grid item xs={12} md={4}>
             <Typography variant="h6" gutterBottom>
-              צור קשר
+              {t('contactUs')}
             </Typography>
-            <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>
-              אימייל: info@soldiersupport.co.il
+            <Typography variant="body2" paragraph>
+              {t('address')}
             </Typography>
-            <Typography variant="body2" sx={{ mb: 1, opacity: 0.8 }}>
-              טלפון: 03-1234567
+            <Typography variant="body2" paragraph>
+              {t('phone')}
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              כתובת: רחוב האלוף 123, תל אביב
+            <Typography variant="body2" paragraph>
+              {t('email')}
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Typography variant="body2" align="center" sx={{ pt: 4, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+              &copy; {new Date().getFullYear()} SoldierSupport. {t('rights')}
             </Typography>
           </Grid>
         </Grid>
-        
-        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.2)', my: 3 }} />
-        
-        <Typography variant="body2" align="center" sx={{ opacity: 0.7 }}>
-          © {new Date().getFullYear()} SoldierSupport. כל הזכויות שמורות.
-        </Typography>
       </Container>
     </Box>
   );

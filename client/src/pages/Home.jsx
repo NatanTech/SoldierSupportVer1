@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Box, Grid, Button, Paper, Card, CardContent } from '@mui/material';
+import { Container, Typography, Box, Grid, Button, Paper, Card, CardContent, CircularProgress } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
@@ -12,6 +12,8 @@ import axios from 'axios';
 import L from 'leaflet';
 import CardPreview from '../components/CardPreview';
 import DotSimulation from '../components/DotSimulation';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 // Delete Icon.Default.prototype._getIconUrl reference
 delete L.Icon.Default.prototype._getIconUrl;
@@ -169,40 +171,28 @@ function LocateControl() {
 }
 
 const Home = () => {
-  const [latestCards, setLatestCards] = useState([]);
-  const [selectedCard, setSelectedCard] = useState(null);
-  const [userLocation, setUserLocation] = useState([31.7683, 35.2137]); // ברירת מחדל: ירושלים
+  const [featuredCards, setFeaturedCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const { language } = useLanguage();
+  const t = useTranslation(language);
 
   useEffect(() => {
-    // השג את מיקום המשתמש
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
-        },
-        () => {
-          console.log('לא ניתן לקבל את מיקום המשתמש');
-        }
-      );
-    }
-
-    // השג את הכרטיסים האחרונים
-    const fetchLatestCards = async () => {
+    const fetchFeaturedCards = async () => {
       try {
-        const response = await axios.get('/api/cards?limit=6');
-        setLatestCards(response.data);
-        setLoading(false);
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/cards/featured`);
+        setFeaturedCards(response.data);
       } catch (error) {
-        console.error('Error fetching latest cards:', error);
+        console.error('Error fetching featured cards:', error);
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchLatestCards();
+    fetchFeaturedCards();
   }, []);
 
-  const openCardPreview = (card) => {
+  const handleCardClick = (card) => {
     setSelectedCard(card);
   };
 
@@ -215,10 +205,10 @@ const Home = () => {
         <HeroContent>
           <Container maxWidth="md">
             <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-              תמיכה בחיילים
+              {t('heroTitle')}
             </Typography>
             <Typography variant="h6" sx={{ mb: 3, opacity: 0.9, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
-              חיבור בין חיילים ואזרחים לתמיכה הדדית
+              {t('heroSubtitle')}
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
               <Button 
@@ -260,118 +250,62 @@ const Home = () => {
                   }
                 }}
               >
-                צפה בכל הכרטיסים
+                {t('viewAllCards')}
               </Button>
             </Box>
           </Container>
         </HeroContent>
       </HeroSection>
 
-      <Container maxWidth="lg" sx={{ py: 8 }}>
-        {/* Map section with enhanced styling */}
-        <SectionTitle>מפה</SectionTitle>
-        <Typography 
-          variant="subtitle1" 
-          color="text.secondary" 
-          align="center" 
-          sx={{ mb: 4 }}
-        >
-          <Box component="span" sx={{ color: '#ff6b6b', fontWeight: 'bold' }}>כתום</Box> - בקשות מחיילים | 
-          <Box component="span" sx={{ color: '#1976d2', fontWeight: 'bold', ml: 1 }}>כחול</Box> - תרומות מאזרחים
+      {/* Featured cards section */}
+      <Container sx={{ mt: 8, mb: 4 }}>
+        <Typography variant="h4" component="h2" gutterBottom>
+          {t('featuredCards')}
         </Typography>
-        <StyledMapContainer elevation={3}>
-          <MapContainer
-            center={userLocation}
-            zoom={10}
-            style={{ height: '400px', width: '100%' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {/* User's current location with the location emoji */}
-            <Marker position={userLocation} icon={locationIcon}>
-              <Popup>
-                <Typography variant="body1" fontWeight="bold">המיקום שלך</Typography>
-              </Popup>
-            </Marker>
-            
-            {/* Card markers */}
-            {!loading && latestCards.map(card => (
-              card.location && card.location.coordinates && card.location.coordinates.length === 2 && 
-              card.location.coordinates[0] !== 0 && card.location.coordinates[1] !== 0 && (
-                <Marker
-                  key={card._id}
-                  position={[card.location.coordinates[1], card.location.coordinates[0]]}
-                  icon={card.cardType === 'request' ? requestIcon : donationIcon}
-                  eventHandlers={{
-                    click: () => {
-                      openCardPreview(card);
-                    },
-                  }}
-                >
-                  <Popup>
-                    <Box sx={{ minWidth: 200, maxWidth: 250 }}>
-                      <Typography variant="subtitle1" fontWeight="bold">{card.itemName}</Typography>
-                      <Typography variant="body2" sx={{ mb: 1 }}>
-                        {card.description.length > 100 
-                          ? card.description.substring(0, 100) + '...' 
-                          : card.description}
-                      </Typography>
-                      <Button 
-                        variant="outlined" 
-                        size="small" 
-                        fullWidth
-                        onClick={() => openCardPreview(card)}
-                        sx={{ 
-                          borderColor: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
-                          color: card.cardType === 'request' ? '#ff6b6b' : '#1976d2',
-                          '&:hover': {
-                            borderColor: card.cardType === 'request' ? '#ff5252' : '#1565c0',
-                            bgcolor: card.cardType === 'request' ? 'rgba(255, 107, 107, 0.1)' : 'rgba(25, 118, 210, 0.1)'
-                          }
-                        }}
-                      >
-                        הצג פרטים נוספים
-                      </Button>
-                    </Box>
-                  </Popup>
-                </Marker>
-              )
-            ))}
-            <LocateControl />
-          </MapContainer>
-        </StyledMapContainer>
-        
-        {/* About section with enhanced cards */}
-        <SectionTitle sx={{ mt: 6 }}>אודות</SectionTitle>
-        <Grid container spacing={4} sx={{ mb: 6 }}>
-          <Grid item xs={12} md={4}>
-            <InfoCard 
-              icon={<SecurityIcon fontSize="large" sx={{ color: '#4caf50' }} />}
-              title="אבטחה ופרטיות"
-              description="אנו שומרים על הפרטיות שלך בצורה הטובה ביותר, עם אבטחה מתקדמת להגנה על המידע האישי שלך."
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <InfoCard 
-              icon={<PeopleIcon fontSize="large" sx={{ color: '#ff9800' }} />}
-              title="קהילה תומכת"
-              description="הצטרף לקהילה גדולה של אנשים שאכפת להם ורוצים לעזור לחיילים שלנו בכל דרך אפשרית."
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <InfoCard 
-              icon={<SpeedIcon fontSize="large" sx={{ color: '#2196f3' }} />}
-              title="מהירות ויעילות"
-              description="מערכת פשוטה ומהירה שמחברת בין חיילים ותורמים במהירות וביעילות."
-            />
-          </Grid>
+        <Grid container spacing={4}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', my: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            featuredCards.map((card) => (
+              <Grid item key={card._id} xs={12} sm={6} md={4}>
+                <div onClick={() => handleCardClick(card)}>
+                  {/* התוכן שלך כאן */}
+                </div>
+              </Grid>
+            ))
+          )}
         </Grid>
+        <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <Button component={RouterLink} to="/cards" variant="outlined">
+            {t('viewAllCards')}
+          </Button>
+        </Box>
       </Container>
-      
-      {/* Card preview modal */}
+
+      {/* Nearby cards section with map */}
+      <Box sx={{ bgcolor: 'background.paper', py: 6 }}>
+        <Container>
+          <Typography variant="h4" component="h2" gutterBottom>
+            {t('nearbyCards')}
+          </Typography>
+          <Paper sx={{ p: 2, height: 400 }}>
+            <MapContainer 
+              center={[31.7683, 35.2137]} 
+              zoom={8} 
+              style={{ height: '400px', width: '100%' }}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {/* Markers and other map components */}
+            </MapContainer>
+          </Paper>
+        </Container>
+      </Box>
+
+      {/* Card Preview Dialog */}
       {selectedCard && (
         <CardPreview 
           card={selectedCard} 

@@ -35,10 +35,14 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CardPreview from '../components/CardPreview';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = useTranslation(language);
   
   const [tabValue, setTabValue] = useState(0);
   const [cards, setCards] = useState([]);
@@ -336,11 +340,11 @@ const AdminDashboard = () => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
-            ביטול
+          <Button onClick={handleDeleteCancel}>
+            {t('cancel')}
           </Button>
           <Button onClick={handleDeleteConfirm} color="error">
-            מחק
+            {t('delete')}
           </Button>
         </DialogActions>
       </Dialog>

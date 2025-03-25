@@ -1,298 +1,171 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { 
-  TextField, 
-  Button, 
-  Typography, 
-  Container, 
-  Box, 
-  Paper, 
-  Alert, 
-  Link,
-  CircularProgress,
-  InputAdornment,
-  IconButton
-} from '@mui/material';
+import { TextField, Button, Typography, Container, Box, Paper, Alert, Link, CircularProgress, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { PersonAdd as RegisterIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
+  marginTop: theme.spacing(8),
   padding: theme.spacing(4),
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  borderRadius: '15px',
-  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)',
-  background: 'rgba(255, 255, 255, 0.9)',
-  backdropFilter: 'blur(10px)',
 }));
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [formErrors, setFormErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
   const navigate = useNavigate();
-  const { register, user } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formErrors, setFormErrors] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const { language } = useLanguage();
+  const t = useTranslation(language);
 
-  // If you want to show a message instead of redirecting
-  useEffect(() => {
-    if (user) {
-      console.log("User is already registered and logged in");
-      // Option 1: You can comment this out to allow visiting the register page while logged in
-      // navigate('/');
-    }
-  }, [user, navigate]);
-
-  const { username, email, password, confirmPassword } = formData;
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const validateForm = () => {
+    const errors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
-    // Update form data
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    if (!username) errors.username = t('required');
+    if (!email) errors.email = t('required');
+    else if (!emailRegex.test(email)) errors.email = t('invalidEmail');
     
-    // Validate fields as user types
-    let newErrors = { ...formErrors };
+    if (!password) errors.password = t('required');
+    else if (password.length < 6) errors.password = t('passwordTooShort');
     
-    switch (name) {
-      case 'username':
-        newErrors.username = value.length < 3 ? 'שם המשתמש חייב להכיל לפחות 3 תווים' : '';
-        break;
-      case 'email':
-        newErrors.email = !validateEmail(value) ? 'אנא הכנס כתובת אימייל תקינה' : '';
-        break;
-      case 'password':
-        newErrors.password = !validatePasswordStrength(value) 
-          ? 'הסיסמה חייבת להכיל לפחות 8 תווים, מספר אחד ואות אחת' 
-          : '';
-        // Also check confirm password match if it exists
-        if (formData.confirmPassword) {
-          newErrors.confirmPassword = value !== formData.confirmPassword 
-            ? 'הסיסמאות אינן תואמות' 
-            : '';
-        }
-        break;
-      case 'confirmPassword':
-        newErrors.confirmPassword = value !== formData.password 
-          ? 'הסיסמאות אינן תואמות' 
-          : '';
-        break;
-      default:
-        break;
-    }
+    if (!confirmPassword) errors.confirmPassword = t('required');
+    else if (password !== confirmPassword) errors.confirmPassword = t('passwordsMustMatch');
     
-    setFormErrors(newErrors);
-  };
-
-  const validateEmail = (email) => {
-    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return re.test(email);
-  };
-
-  const validatePasswordStrength = (password) => {
-    // Password must be at least 8 characters and contain at least one number and one letter
-    const re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    return re.test(password);
+    if (!phoneNumber) errors.phoneNumber = t('required');
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     
-    // Comprehensive form validation
-    let hasError = false;
-    let newErrors = { ...formErrors };
-    
-    if (!formData.username) {
-      newErrors.username = 'שם משתמש הוא שדה חובה';
-      hasError = true;
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'שם המשתמש חייב להכיל לפחות 3 תווים';
-      hasError = true;
-    }
-    
-    if (!formData.email) {
-      newErrors.email = 'אימייל הוא שדה חובה';
-      hasError = true;
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'אנא הכנס כתובת אימייל תקינה';
-      hasError = true;
-    }
-    
-    if (!formData.password) {
-      newErrors.password = 'סיסמה היא שדה חובה';
-      hasError = true;
-    } else if (!validatePasswordStrength(formData.password)) {
-      newErrors.password = 'הסיסמה חייבת להכיל לפחות 8 תווים, מספר אחד ואות אחת';
-      hasError = true;
-    }
-    
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'אימות סיסמה הוא שדה חובה';
-      hasError = true;
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'הסיסמאות אינן תואמות';
-      hasError = true;
-    }
-    
-    setFormErrors(newErrors);
-    
-    if (hasError) {
+    if (!validateForm()) {
       return;
     }
     
     setLoading(true);
+    setError('');
     
     try {
-      const response = await axios.post('/api/auth/register', formData);
-      localStorage.setItem('token', response.data.token);
-      navigate('/');
+      await register(username, email, password, phoneNumber);
+      navigate('/login');
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else if (err.response && err.response.status === 400) {
-        setError('שם משתמש או אימייל כבר קיימים במערכת');
-      } else {
-        setError('שגיאה בהרשמה. אנא נסה שוב מאוחר יותר');
-      }
-      console.error(err);
+      console.error('Registration error:', err);
+      setError(err.response?.data?.message || t('error'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="xs" sx={{ mt: 8, mb: 4 }}>
+    <Container maxWidth="sm">
       <StyledPaper>
-        <Typography variant="h4" gutterBottom color="primary" sx={{ fontWeight: 'bold', mb: 3 }}>
-          הרשמה
+        <Typography component="h1" variant="h5">
+          {t('registerTitle')}
         </Typography>
         
-        {error && <Alert severity="error" sx={{ width: '100%', mb: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
         
-        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1, width: '100%' }}>
-          <TextField
-            error={!!formErrors.username}
-            helperText={formErrors.username}
-            margin="normal"
-            required
-            fullWidth
-            id="username"
-            label="שם משתמש"
-            name="username"
-            autoComplete="username"
-            autoFocus
-            value={username}
-            onChange={handleChange}
-            variant="outlined"
-            dir="rtl"
-          />
-          <TextField
-            error={!!formErrors.email}
-            helperText={formErrors.email}
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="אימייל"
-            name="email"
-            autoComplete="email"
-            value={email}
-            onChange={handleChange}
-            variant="outlined"
-            dir="rtl"
-          />
-          <TextField
-            error={!!formErrors.password}
-            helperText={formErrors.password}
-            required
-            fullWidth
-            name="password"
-            label="סיסמה"
-            type={showPassword ? 'text' : 'password'}
-            id="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={handleChange}
-            variant="outlined"
-            dir="rtl"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
-          <TextField
-            error={!!formErrors.confirmPassword}
-            helperText={formErrors.confirmPassword}
-            required
-            fullWidth
-            name="confirmPassword"
-            label="אימות סיסמה"
-            type={showConfirmPassword ? 'text' : 'password'}
-            id="confirmPassword"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={handleChange}
-            variant="outlined"
-            dir="rtl"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    edge="end"
-                  >
-                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              )
-            }}
-          />
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                id="username"
+                label={t('usernameLabel')}
+                name="username"
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                error={!!formErrors.username}
+                helperText={formErrors.username}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                id="email"
+                label={t('emailLabel')}
+                name="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                error={!!formErrors.email}
+                helperText={formErrors.email}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                name="password"
+                label={t('passwordLabel')}
+                type="password"
+                id="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                error={!!formErrors.password}
+                helperText={formErrors.password}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                name="confirmPassword"
+                label={t('confirmPasswordLabel')}
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                error={!!formErrors.confirmPassword}
+                helperText={formErrors.confirmPassword}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                required
+                fullWidth
+                name="phoneNumber"
+                label={t('phoneLabel')}
+                id="phoneNumber"
+                autoComplete="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                error={!!formErrors.phoneNumber}
+                helperText={formErrors.phoneNumber}
+              />
+            </Grid>
+          </Grid>
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            color="primary"
-            size="large"
-            sx={{ mt: 3, mb: 2, py: 1.5, borderRadius: '8px', fontWeight: 'bold' }}
+            sx={{ mt: 3, mb: 2 }}
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <RegisterIcon />}
           >
-            {loading ? 'נרשם...' : 'הרשמה'}
+            {loading ? <CircularProgress size={24} /> : t('register')}
           </Button>
-          <Box textAlign="center" mt={2}>
+          <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2">
-              כבר יש לך חשבון?{' '}
-              <Link component={RouterLink} to="/login" style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 'bold' }}>
-                התחבר כאן
+              {t('alreadyHaveAccount')}{' '}
+              <Link component={RouterLink} to="/login">
+                {t('loginNow')}
               </Link>
             </Typography>
           </Box>

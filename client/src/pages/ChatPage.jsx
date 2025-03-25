@@ -29,6 +29,8 @@ import {
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
@@ -64,6 +66,8 @@ const ChatPage = () => {
   const { user } = useAuth();
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
+  const { language } = useLanguage();
+  const t = useTranslation(language);
   
   const [chat, setChat] = useState(null);
   const [message, setMessage] = useState('');
@@ -321,7 +325,7 @@ const ChatPage = () => {
             disabled={!message.trim()}
             endIcon={<SendIcon />}
           >
-            שלח
+            {t('send')}
           </Button>
         </Box>
       </StyledPaper>

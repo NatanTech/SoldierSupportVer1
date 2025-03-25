@@ -26,7 +26,9 @@ import {
   TextField,
   Grid,
   Alert,
-  Snackbar
+  Snackbar,
+  Tooltip,
+  Stack
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -39,6 +41,9 @@ import { styled } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import axios from 'axios';
+import TranslateIcon from '@mui/icons-material/Translate';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 // Logo styling for modern appearance
 const LogoContainer = styled(Box)(({ theme }) => ({
@@ -86,6 +91,8 @@ const Navbar = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, checkAuth, authAxios } = useAuth();
+  const { language, isRTL } = useLanguage();
+  const t = useTranslation(language);
   
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -107,6 +114,9 @@ const Navbar = () => {
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  // Language selector states
+  const [languageAnchorEl, setLanguageAnchorEl] = useState(null);
 
   useEffect(() => {
     if (user) {
@@ -564,10 +574,24 @@ const Navbar = () => {
     </StyledProfileDialog>
   );
 
+  // Language selector
+  const handleLanguageMenuOpen = (event) => {
+    setLanguageAnchorEl(event.currentTarget);
+  };
+
+  const handleLanguageMenuClose = () => {
+    setLanguageAnchorEl(null);
+  };
+
+  const handleLanguageChange = (lang) => {
+    changeLanguage(lang);
+    handleLanguageMenuClose();
+  };
+
   return (
     <>
-      <AppBar position="fixed" color="default" elevation={1}>
-        <Container maxWidth="lg">
+      <AppBar position="fixed" color="default" elevation={1} sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+        <Container maxWidth="xl">
           <Toolbar disableGutters>
             {/* Logo Container */}
             <Box sx={{ display: 'flex', flexGrow: { xs: 1, md: 0 } }}>
@@ -578,38 +602,61 @@ const Navbar = () => {
               </LogoContainer>
             </Box>
             
-            {/* Navigation Links - Right Side */}
-            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'flex-end' }}>
-              {mainNavLinks.map((link) => (
-                <Button
-                  key={link.path}
-                  component={RouterLink}
-                  to={link.path}
-                  sx={{ 
-                    color: 'primary.main',
-                    mx: 1,
-                    fontWeight: 'medium',
-                    '&:hover': {
-                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                    }
-                  }}
-                >
-                  {link.title}
-                </Button>
-              ))}
+            {/* Desktop menu items */}
+            <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
+              {isAuthenticated ? (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/"
+                    sx={{ my: 2, color: 'white', display: 'block' }}
+                  >
+                    {t('home')}
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/cards"
+                    sx={{ my: 2, color: 'white', display: 'block' }}
+                  >
+                    {t('cards')}
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/create-card"
+                    sx={{ my: 2, color: 'white', display: 'block' }}
+                  >
+                    {t('createCard')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    component={RouterLink}
+                    to="/"
+                    sx={{ my: 2, color: 'white', display: 'block' }}
+                  >
+                    {t('home')}
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/cards"
+                    sx={{ my: 2, color: 'white', display: 'block' }}
+                  >
+                    {t('cards')}
+                  </Button>
+                </>
+              )}
             </Box>
             
-            {/* Profile Container - Center */}
-            <Box 
-              sx={{ 
-                position: 'absolute', 
-                left: '50%', 
-                transform: 'translateX(-50%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
+            {/* User menu and authentication buttons */}
+            <Box sx={{ flexGrow: 0 }}>
+              {/* Add language selector button */}
+              <Tooltip title={t('changeLanguage')}>
+                <IconButton onClick={handleLanguageMenuOpen} sx={{ p: 0, mr: 2, color: 'white' }}>
+                  <TranslateIcon />
+                </IconButton>
+              </Tooltip>
+              
               {isAuthenticated ? (
                 <StyledAvatar
                   onClick={handleMenuOpen}
@@ -621,26 +668,24 @@ const Navbar = () => {
                   {user?.username?.charAt(0).toUpperCase()}
                 </StyledAvatar>
               ) : (
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button 
-                    component={RouterLink} 
-                    to="/login" 
-                    variant="outlined" 
-                    color="primary" 
-                    size="small"
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    component={RouterLink}
+                    to="/login"
+                    variant="outlined"
+                    sx={{ color: 'white', borderColor: 'white' }}
                   >
-                    התחברות
+                    {t('login')}
                   </Button>
-                  <Button 
-                    component={RouterLink} 
-                    to="/register" 
-                    variant="contained" 
-                    color="primary" 
-                    size="small"
+                  <Button
+                    component={RouterLink}
+                    to="/register"
+                    variant="contained"
+                    color="secondary"
                   >
-                    הרשמה
+                    {t('register')}
                   </Button>
-                </Box>
+                </Stack>
               )}
             </Box>
             
@@ -694,6 +739,34 @@ const Navbar = () => {
           {profileSuccess}
         </Alert>
       </Snackbar>
+      
+      {/* Language selection menu */}
+      <Menu
+        sx={{ mt: '45px' }}
+        id="language-menu"
+        anchorEl={languageAnchorEl}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        keepMounted
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        open={Boolean(languageAnchorEl)}
+        onClose={handleLanguageMenuClose}
+      >
+        <MenuItem onClick={() => handleLanguageChange('he')} selected={language === 'he'}>
+          עברית
+        </MenuItem>
+        <MenuItem onClick={() => handleLanguageChange('en')} selected={language === 'en'}>
+          English
+        </MenuItem>
+        <MenuItem onClick={() => handleLanguageChange('ar')} selected={language === 'ar'}>
+          العربية
+        </MenuItem>
+      </Menu>
       
       {/* Toolbar spacer to prevent content from going under the appbar */}
       <Toolbar />

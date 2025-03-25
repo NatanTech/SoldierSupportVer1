@@ -11,22 +11,29 @@ import {
   Divider, 
   IconButton, 
   Chip, 
-  Avatar
+  Avatar,
+  Grid,
+  CardMedia
 } from '@mui/material';
 import { 
   Close as CloseIcon, 
   Phone as PhoneIcon, 
   Chat as ChatIcon, 
   LocationOn as LocationIcon,
-  CalendarToday as CalendarIcon
+  CalendarToday as CalendarIcon,
+  ImageNotSupported as ImageNotSupportedIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const CardPreview = ({ card, open, onClose }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showPhone, setShowPhone] = useState(false);
+  const { language } = useLanguage();
+  const t = useTranslation(language);
   
   if (!card) return null;
   
@@ -53,7 +60,7 @@ const CardPreview = ({ card, open, onClose }) => {
       open={open} 
       onClose={onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth="md"
       PaperProps={{ 
         sx: { 
           borderRadius: '12px',
@@ -69,60 +76,84 @@ const CardPreview = ({ card, open, onClose }) => {
             size="small"
             sx={{ mr: 1.5 }}
           />
-          <Typography variant="h6" component="div">
+          <Typography variant="h5" component="div">
             {card.itemName}
           </Typography>
         </Box>
-        <IconButton edge="end" color="inherit" onClick={onClose} aria-label="close">
+        <IconButton edge="end" color="inherit" onClick={onClose} aria-label={t('close')}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
       
-      <DialogContent sx={{ pt: 0, pb: 2 }}>
-        {card.imageUrl && (
-          <Box sx={{ 
-            width: '100%', 
-            height: 200, 
-            borderRadius: '8px', 
-            overflow: 'hidden',
-            mb: 2 
-          }}>
-            <img 
-              src={card.imageUrl.startsWith('http') ? card.imageUrl : `/${card.imageUrl}`} 
-              alt={card.itemName}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          </Box>
-        )}
-        
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          {card.description}
-        </Typography>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <LocationIcon fontSize="small" color="action" sx={{ mr: 1 }} />
-          <Typography variant="body2" color="text.secondary">
-            {card.location?.address || 'מיקום לא צוין'}
-          </Typography>
-        </Box>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <CalendarIcon fontSize="small" color="action" sx={{ mr: 1 }} />
-          <Typography variant="body2" color="text.secondary">
-            {cardDate}
-          </Typography>
-        </Box>
-        
-        <Divider sx={{ my: 2 }} />
-        
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Avatar sx={{ mr: 1, bgcolor: 'primary.main' }}>
-            {card.user?.username?.charAt(0).toUpperCase() || 'U'}
-          </Avatar>
-          <Typography variant="subtitle2">
-            {card.user?.username || 'משתמש'}
-          </Typography>
-        </Box>
+      <DialogContent>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={6}>
+            {card.image ? (
+              <CardMedia
+                component="img"
+                alt={card.itemName}
+                image={`${process.env.REACT_APP_API_URL || ''}${card.image}`}
+                sx={{ 
+                  width: '100%', 
+                  height: 200, 
+                  borderRadius: '8px', 
+                  overflow: 'hidden',
+                  mb: 2 
+                }}
+              />
+            ) : (
+              <Box sx={{ 
+                width: '100%', 
+                height: 200, 
+                borderRadius: '8px', 
+                overflow: 'hidden',
+                mb: 2,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                <ImageNotSupportedIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
+                <Typography variant="body2" align="center">
+                  {t('noImageAvailable')}
+                </Typography>
+              </Box>
+            )}
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+              <Typography variant="subtitle1" color="primary" gutterBottom>
+                {card.cardType === 'request' ? t('requestCard') : t('donationCard')}
+              </Typography>
+              
+              <Typography variant="body1" paragraph>
+                {card.description}
+              </Typography>
+              
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Avatar sx={{ mr: 1, bgcolor: 'primary.main' }}>
+                  {card.user?.username?.charAt(0).toUpperCase() || 'U'}
+                </Avatar>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {t('postedBy')}: {card.user?.username || t('anonymous')}
+                </Typography>
+              </Box>
+              
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {t('postedOn')}: {new Date(card.createdAt).toLocaleDateString()}
+              </Typography>
+              
+              {card.location && (
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  {t('location')}: {card.location.address || t('locationNotSpecified')}
+                </Typography>
+              )}
+            </Box>
+          </Grid>
+        </Grid>
       </DialogContent>
       
       <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'space-between' }}>
@@ -142,12 +173,12 @@ const CardPreview = ({ card, open, onClose }) => {
             variant="outlined"
             onClick={startChat}
           >
-            צור קשר
+            {t('contact')}
           </Button>
         )}
         
         <Button onClick={onClose} color="inherit">
-          סגור
+          {t('close')}
         </Button>
       </DialogActions>
     </Dialog>

@@ -22,11 +22,15 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const CardPreview = ({ card, open, onClose }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showPhone, setShowPhone] = useState(false);
+  const { language } = useLanguage();
+  const t = useTranslation(language);
   
   if (!card) return null;
   
@@ -152,12 +156,12 @@ const CardPreview = ({ card, open, onClose }) => {
             variant="outlined"
             onClick={startChat}
           >
-            צור קשר
+            {t('contact')}
           </Button>
         )}
         
         <Button onClick={onClose} color="inherit">
-          סגור
+          {t('close')}
         </Button>
       </DialogActions>
     </Dialog>

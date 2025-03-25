@@ -5,6 +5,7 @@ import { ThemeProvider, createTheme, responsiveFontSizes } from '@mui/material/s
 import { CssBaseline } from '@mui/material';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import rtlPlugin from 'stylis-plugin-rtl';
 import { prefixer } from 'stylis';
 import { CacheProvider } from '@emotion/react';
@@ -56,7 +57,9 @@ root.render(
         <CssBaseline />
         <BrowserRouter>
           <AuthProvider>
-            <App />
+            <LanguageProvider>
+              <App />
+            </LanguageProvider>
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>

@@ -6,6 +6,8 @@ import { Box, Typography, Button, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 // Fix default marker icon issues - CRITICAL!
 delete L.Icon.Default.prototype._getIconUrl;
@@ -98,7 +100,9 @@ const LocationMarker = ({ position, setPosition }) => {
   ) : null;
 };
 
-const LocationPicker = () => {
+const LocationPicker = ({ onLocationSelect, initialPosition }) => {
+  const { language } = useLanguage();
+  const t = useTranslation(language);
   const [position, setPosition] = useState(null);
   const mapRef = useRef();
 
@@ -153,8 +157,8 @@ const LocationPicker = () => {
         <LocationOnIcon color="primary" />
         <Typography variant="body2" color="text.secondary">
           {position
-            ? `נבחר מיקום: ${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`
-            : 'לא נבחר מיקום'}
+            ? `${t('selectedLocation')}: ${position.latitude.toFixed(6)}, ${position.longitude.toFixed(6)}`
+            : t('noLocationSelected')}
         </Typography>
       </Box>
     </Stack>

@@ -3,6 +3,8 @@ import { Container, Box, Typography, Button, Paper } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 import { Home as HomeIcon } from '@mui/icons-material';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(6),
@@ -16,28 +18,22 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 }));
 
 const NotFound = () => {
+  const { language } = useLanguage();
+  const t = useTranslation(language);
+
   return (
     <Container maxWidth="md" sx={{ mt: 10, mb: 4 }}>
       <StyledPaper>
-        <Typography 
-          variant="h1" 
-          component="h1" 
-          sx={{ 
-            fontWeight: 900, 
-            fontSize: { xs: '6rem', md: '10rem' },
-            color: 'primary.main',
-            lineHeight: 1
-          }}
-        >
+        <Typography variant="h1" color="primary" sx={{ fontWeight: 'bold', fontSize: '8rem', mb: 2 }}>
           404
         </Typography>
         
-        <Typography variant="h4" component="h2" gutterBottom>
-          העמוד לא נמצא
+        <Typography variant="h4" sx={{ mb: 3, fontWeight: 'medium' }}>
+          {t('pageNotFound')}
         </Typography>
         
         <Typography variant="body1" sx={{ mb: 4, maxWidth: '600px' }}>
-          אנחנו מצטערים, אבל העמוד שחיפשת לא קיים. ייתכן שהקישור שגוי או שהדף הוסר.
+          {t('pageNotFoundDescription')}
         </Typography>
         
         <Button
@@ -47,7 +43,7 @@ const NotFound = () => {
           size="large"
           startIcon={<HomeIcon />}
         >
-          חזרה לדף הבית
+          {t('backToHomepage')}
         </Button>
       </StyledPaper>
     </Container>

@@ -38,6 +38,8 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -74,6 +76,8 @@ const MapBox = styled(Box)(({ theme }) => ({
 const CreateCard = () => {
   const { user, authAxios } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const t = useTranslation(language);
   
   const [cardData, setCardData] = useState({
     itemName: '',
@@ -503,7 +507,7 @@ const CreateCard = () => {
                     }
                   }}
                 >
-                  {loading ? <CircularProgress size={24} /> : 'צור כרטיס'}
+                  {loading ? <CircularProgress size={24} /> : t('createCard')}
                 </Button>
               </Grid>
             </Grid>

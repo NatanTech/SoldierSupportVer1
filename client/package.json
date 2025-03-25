@@ -22,7 +22,9 @@
         "start": "react-scripts start",
         "build": "react-scripts build",
         "test": "react-scripts test",
-        "eject": "react-scripts eject"
+        "eject": "react-scripts eject",
+        "check-translations": "node src/scripts/checkTranslations.js",
+        "check-hooks": "node src/scripts/ensureConsistentHooks.js"
     },
     "eslintConfig": {
         "extends": [

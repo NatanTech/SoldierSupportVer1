@@ -36,6 +36,8 @@ import { useAuth } from '../context/AuthContext';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { useLanguage } from '../context/LanguageContext';
+import { useTranslation } from '../utils/translations';
 
 // Fix Leaflet marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -56,6 +58,8 @@ const CardDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language } = useLanguage();
+  const t = useTranslation(language);
   
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -335,7 +339,7 @@ const CardDetails = () => {
               )}
               
               <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
-                פורסם: {new Date(card.createdAt).toLocaleDateString('he-IL')}
+                {t('published')}: {new Date(card.createdAt).toLocaleDateString(language === 'en' ? 'en-US' : language === 'ar' ? 'ar-EG' : 'he-IL')}
               </Typography>
             </Box>
           </Grid>
